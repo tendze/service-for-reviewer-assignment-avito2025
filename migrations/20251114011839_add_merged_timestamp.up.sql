@@ -1,0 +1,2 @@
+ALTER TABLE pull_request
+ADD COLUMN merged_at TIMESTAMP NULL;
