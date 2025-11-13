@@ -17,7 +17,7 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Host        string        `yaml:"host" env-default:"jwt-auth-service"`
+	Host        string        `yaml:"host" env-default:"localhost"`
 	Port        string        `yaml:"port" env-default:"8080"`
 	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
 	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
@@ -25,9 +25,9 @@ type HTTPServer struct {
 
 type DataBase struct {
 	Username   string `yaml:"username" env-default:"postgres"`
-	Host       string `yaml:"host" env-default:"db"`
+	Host       string `yaml:"host" env-default:"localhost"`
 	Port       string `yaml:"port" env-default:"5432"`
-	DBName     string `yaml:"dbname" env-default:"my-db"`
+	DBName     string `yaml:"dbname" env-default:"avito_db"`
 	DBPassword string
 	SSLMode    string `yaml:"sslmode" env-default:"disable"`
 }
@@ -68,4 +68,9 @@ func fetchConfigPath() (string, error) {
 	}
 
 	return configPath, nil
+}
+
+func (db DataBase) DSN() string {
+	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
+		db.Username, db.DBPassword, db.Host, db.Port, db.DBName, db.SSLMode)
 }
