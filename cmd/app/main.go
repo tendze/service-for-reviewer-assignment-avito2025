@@ -2,11 +2,16 @@ package main
 
 import (
 	"log/slog"
+	"net/http"
 	"os"
 
 	"dang.z.v.task/internal/config"
-	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/handlers/prreviewer"
+	"dang.z.v.task/internal/handlers/pullrequest"
+	"dang.z.v.task/internal/handlers/team"
+	"dang.z.v.task/internal/handlers/user"
 	"dang.z.v.task/internal/storage/postgresql"
+	"github.com/go-chi/chi/v5"
 )
 
 const (
@@ -27,9 +32,28 @@ func main() {
 		log.Error("failed to init storage:", slog.String("errormsg", err.Error()))
 		return
 	}
-	_ = storage 
-	
-	log.Info("Инициализирована бд, написан мигратор, добавлены миграции")
+	_ = storage
+
+	router := chi.NewRouter()
+
+	router.Mount("/users", user.NewHandler())
+	router.Mount("/team", team.NewHandler())
+	router.Mount("/pullRequest", pullrequest.NewHandler())
+	router.Mount("/prReviewer", prreviewer.NewHandler())
+
+	server := &http.Server{
+		Addr:         cfg.HTTPServer.ServerAddr(),
+		Handler:      router,
+		ReadTimeout:  cfg.HTTPServer.Timeout,
+		WriteTimeout: cfg.HTTPServer.Timeout,
+		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
+	}
+
+	log.Info("starting server")
+	if err := server.ListenAndServe(); err != nil {
+		log.Error("failed to start server")
+	}
+
 	log.Info("Данг Зуй Ву написал сервис")
 }
 

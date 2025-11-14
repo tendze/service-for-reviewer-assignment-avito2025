@@ -74,3 +74,7 @@ func (db DataBase) DSN() string {
 	return fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=%s",
 		db.Username, db.DBPassword, db.Host, db.Port, db.DBName, db.SSLMode)
 }
+
+func (svr HTTPServer) ServerAddr() string {
+	return fmt.Sprintf("%s:%s", svr.Host, svr.Port)
+}
