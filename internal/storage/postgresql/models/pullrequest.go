@@ -12,3 +12,7 @@ type PullRequest struct {
 	UpdatedAt time.Time `gorm:"default:now()"`
 	MergedAt  *time.Time
 }
+
+func (PullRequest) TableName() string {
+	return "pull_request"
+}

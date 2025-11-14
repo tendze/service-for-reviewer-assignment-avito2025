@@ -8,3 +8,7 @@ type PRReviewer struct {
 	ReviewerID uint      `gorm:"not null"`
 	CreatedAt  time.Time `gorm:"default:now()"`
 }
+
+func (PRReviewer) TableName() string {
+	return "pr_reviewer"
+}

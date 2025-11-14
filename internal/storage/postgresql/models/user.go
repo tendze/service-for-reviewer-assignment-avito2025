@@ -10,3 +10,7 @@ type User struct {
 	Team      Team      `gorm:"foreignKey:TeamID"`
 	CreatedAt time.Time `gorm:"default:now()"`
 }
+
+func (User) TableName() string {
+    return "user"
+}

@@ -3,6 +3,8 @@ package postgresql
 import (
 	"fmt"
 
+	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/storage/postgresql/mapper"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -25,4 +27,30 @@ func New(dsn string) (*Storage, error) {
 	storage := &Storage{db: db}
 
 	return storage, nil
+}
+
+func (s *Storage) SaveUser(usr domain.User) error {
+	const op = "postgres.SaveUser"
+
+	pgmodel := mapper.UserDomainToModel(usr)
+
+	result := s.db.Create(&pgmodel)
+	if err := result.Error; err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
+}
+
+func (s *Storage) SaveTeam(team domain.Team) error {
+	const op = "postgres.SaveTeam"
+
+	pgmodel := mapper.TeamDomainToModel(team)
+
+	result := s.db.Create(&pgmodel)
+	if err := result.Error; err != nil {
+		return fmt.Errorf("%s: %w", op, err)
+	}
+
+	return nil
 }

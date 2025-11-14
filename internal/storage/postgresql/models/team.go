@@ -7,3 +7,7 @@ type Team struct {
 	Name      string    `gorm:"unique;not null"`
 	CreatedAt time.Time `gorm:"default:now()"`
 }
+
+func (Team) TableName() string {
+    return "team" 
+}

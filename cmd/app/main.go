@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"dang.z.v.task/internal/config"
+	"dang.z.v.task/internal/domain"
 	"dang.z.v.task/internal/storage/postgresql"
 )
 
@@ -26,9 +27,8 @@ func main() {
 		log.Error("failed to init storage:", slog.String("errormsg", err.Error()))
 		return
 	}
-
-	_ = storage
-
+	_ = storage 
+	
 	log.Info("Инициализирована бд, написан мигратор, добавлены миграции")
 	log.Info("Данг Зуй Ву написал сервис")
 }
