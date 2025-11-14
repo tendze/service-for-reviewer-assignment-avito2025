@@ -10,6 +10,7 @@ import (
 	"dang.z.v.task/internal/handlers/pullrequest"
 	"dang.z.v.task/internal/handlers/team"
 	"dang.z.v.task/internal/handlers/user"
+	userservice "dang.z.v.task/internal/service/user"
 	"dang.z.v.task/internal/storage/postgresql"
 	"github.com/go-chi/chi/v5"
 )
@@ -36,7 +37,9 @@ func main() {
 
 	router := chi.NewRouter()
 
-	router.Mount("/users", user.NewHandler())
+	userService := userservice.NewUserService(storage, log)
+
+	router.Mount("/users", user.NewHandler(userService))
 	router.Mount("/team", team.NewHandler())
 	router.Mount("/pullRequest", pullrequest.NewHandler())
 	router.Mount("/prReviewer", prreviewer.NewHandler())
