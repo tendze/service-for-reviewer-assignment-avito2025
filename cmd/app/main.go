@@ -1,9 +1,12 @@
 package main
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"dang.z.v.task/internal/config"
 	"dang.z.v.task/internal/handlers/prreviewer"
@@ -34,7 +37,6 @@ func main() {
 		log.Error("failed to init storage:", slog.String("errormsg", err.Error()))
 		return
 	}
-	_ = storage
 
 	router := chi.NewRouter()
 
@@ -54,11 +56,26 @@ func main() {
 		IdleTimeout:  cfg.HTTPServer.IdleTimeout,
 	}
 
-	// TODO: graceful shutdown
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	log.Info("starting server")
-	if err := server.ListenAndServe(); err != nil {
-		log.Error("failed to start server")
+	go func() {
+		log.Info("starting server")
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Error("failed to start server", slog.String("err", err.Error()))
+		}
+	}()
+
+	<-stop
+	log.Info("shutting down server...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTPServer.ShuttingDownTimeout)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Error("graceful shutdown failed", slog.String("err", err.Error()))
+	} else {
+		log.Info("server gracefully stopped")
 	}
 
 	log.Info("Данг Зуй Ву написал сервис")
