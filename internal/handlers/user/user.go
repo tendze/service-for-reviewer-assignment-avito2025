@@ -76,7 +76,7 @@ func (h *UserHandler) setIsActive(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSONSuccess(w, response.NewSetIsActiveReponse(*user, teamName))
+	response.JSONSuccess(w, http.StatusOK, response.NewSetIsActiveReponse(*user, teamName))
 }
 
 func (h *UserHandler) getReview(w http.ResponseWriter, r *http.Request) {
@@ -99,5 +99,5 @@ func (h *UserHandler) getReview(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	response.JSONSuccess(w, response.NewGetPRResponse(req.UserID, prs))
+	response.JSONSuccess(w, http.StatusOK, response.NewGetPRResponse(req.UserID, prs))
 }

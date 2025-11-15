@@ -1,9 +1,6 @@
 package response
 
 import (
-	"encoding/json"
-	"net/http"
-
 	"dang.z.v.task/internal/domain"
 )
 
@@ -42,12 +39,6 @@ func NewGetPRResponse(userID uint, prs *[]domain.PullRequest) map[string]interfa
 		"user_id":       userID,
 		"pull_requests": prDomainsToResponse(prs),
 	}
-}
-
-func JSONSuccess(w http.ResponseWriter, data interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-
-	json.NewEncoder(w).Encode(data)
 }
 
 func prDomainsToResponse(prs *[]domain.PullRequest) []PullRequests {

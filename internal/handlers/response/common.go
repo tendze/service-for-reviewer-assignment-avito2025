@@ -37,3 +37,10 @@ func JSONError(w http.ResponseWriter, statusCode int, code string, message strin
 		},
 	})
 }
+
+func JSONSuccess(w http.ResponseWriter, code int, data interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
+
+	json.NewEncoder(w).Encode(data)
+}
