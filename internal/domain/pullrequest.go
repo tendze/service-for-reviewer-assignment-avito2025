@@ -2,6 +2,11 @@ package domain
 
 import "time"
 
+const (
+	StatusOpen   = "OPEN"
+	StatusMerged = "MERGED"
+)
+
 type PullRequest struct {
 	ID        uint       `json:"id"`
 	Title     string     `json:"title"`

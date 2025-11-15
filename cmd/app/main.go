@@ -13,6 +13,7 @@ import (
 	"dang.z.v.task/internal/handlers/pullrequest"
 	"dang.z.v.task/internal/handlers/team"
 	"dang.z.v.task/internal/handlers/user"
+	prservice "dang.z.v.task/internal/service/pullrequest"
 	teamservice "dang.z.v.task/internal/service/team"
 	userservice "dang.z.v.task/internal/service/user"
 	"dang.z.v.task/internal/storage/postgresql"
@@ -42,10 +43,11 @@ func main() {
 
 	userService := userservice.NewUserService(storage, log)
 	teamService := teamservice.NewTeamService(storage, log)
+	prService := prservice.NewPullRequestService(storage, log)
 
 	router.Mount("/users", user.NewHandler(userService))
 	router.Mount("/team", team.NewHandler(teamService))
-	router.Mount("/pullRequest", pullrequest.NewHandler())
+	router.Mount("/pullRequest", pullrequest.NewHandler(prService))
 	router.Mount("/prReviewer", prreviewer.NewHandler())
 
 	server := &http.Server{
