@@ -7,7 +7,6 @@ import (
 
 func UserDomainToModel(usr domain.User) models.User {
 	return models.User{
-		ID:        usr.ID,
 		Name:      usr.Name,
 		IsActive:  usr.IsActive,
 		TeamID:    usr.TeamID,
@@ -23,4 +22,13 @@ func UserModelToDomain(user models.User) domain.User {
 		TeamID:    user.TeamID,
 		CreatedAt: user.CreatedAt,
 	}
+}
+
+func UserModelsToDomains(users []models.User) []domain.User {
+	res := make([]domain.User, 0, len(users))
+	for _, user := range users {
+		res = append(res, UserModelToDomain(user))
+	}
+
+	return res
 }

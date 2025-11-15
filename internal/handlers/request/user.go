@@ -5,46 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
-	"time"
-
-	"dang.z.v.task/internal/domain"
 )
-
-type SaveUserRequest struct {
-	Name     string `json:"name"`
-	IsActive bool   `json:"is_active"`
-	TeamId   uint   `json:"team_id"`
-}
-
-func (req *SaveUserRequest) Bind(r *http.Request) error {
-	if err := json.NewDecoder(r.Body).Decode(req); err != nil {
-		return err
-	}
-
-	return req.validate()
-}
-
-func (req *SaveUserRequest) validate() error {
-	if req.Name == "" {
-		return fmt.Errorf("name is required field")
-	}
-
-	if req.TeamId <= 0 {
-		return fmt.Errorf("team_id is required field")
-	}
-
-	return nil
-}
-
-func (sur *SaveUserRequest) Domain() domain.User {
-	return domain.User{
-		ID:        0,
-		Name:      sur.Name,
-		IsActive:  sur.IsActive,
-		TeamID:    sur.TeamId,
-		CreatedAt: time.Time{},
-	}
-}
 
 type SetIsActiveRequest struct {
 	UserID   uint  `json:"user_id"`
@@ -87,7 +48,7 @@ func (req *GetReviewRequest) Bind(r *http.Request) error {
 	}
 
 	req.UserID = uint(userID)
-	
+
 	return req.validate()
 }
 

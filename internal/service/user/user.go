@@ -6,7 +6,9 @@ import (
 	"dang.z.v.task/internal/domain"
 )
 
-type UserRepository interface{}
+type UserRepository interface{
+
+}
 
 type UserService struct {
 	userRepo UserRepository
@@ -21,10 +23,6 @@ func NewUserService(
 		userRepo: usrRepository,
 		log:      log,
 	}
-}
-
-func (s *UserService) SaveUser(user domain.User) error {
-	return nil
 }
 
 // / Returns User, User's team name and error

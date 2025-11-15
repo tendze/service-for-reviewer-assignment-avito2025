@@ -7,7 +7,6 @@ import (
 
 func TeamDomainToModel(team domain.Team) models.Team {
 	return models.Team{
-		ID:        team.ID,
 		Name:      team.Name,
 		CreatedAt: team.CreatedAt,
 	}

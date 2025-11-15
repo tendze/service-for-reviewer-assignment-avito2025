@@ -10,7 +10,6 @@ import (
 )
 
 type UserService interface {
-	SaveUser(domain.User) error
 	SetIsActive(userID uint, isActive bool) (*domain.User, string, error)
 	GetReview(userID uint) (*[]domain.PullRequest, error)
 }
@@ -26,34 +25,10 @@ func NewHandler(userService UserService) http.Handler {
 
 	r := chi.NewRouter()
 
-	r.Post("/add", handler.saveUser)
 	r.Post("/setIsActive", handler.setIsActive)
 	r.Get("/getReview", handler.getReview)
 
 	return r
-}
-
-func (h *UserHandler) saveUser(w http.ResponseWriter, r *http.Request) {
-	var req request.SaveUserRequest
-	if err := req.Bind(r); err != nil {
-		response.JSONError(w, http.StatusBadRequest, response.BAD_REQUEST, err.Error())
-
-		return
-	}
-
-	userDomain := req.Domain()
-
-	err := h.userService.SaveUser(userDomain)
-	if err != nil {
-		response.JSONError(
-			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
-		)
-
-		return
-	}
 }
 
 func (h *UserHandler) setIsActive(w http.ResponseWriter, r *http.Request) {
