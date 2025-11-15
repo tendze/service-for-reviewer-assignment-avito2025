@@ -26,3 +26,12 @@ func PullRequestModelToDomain(pr models.PullRequest) domain.PullRequest {
 		MergedAt:  pr.MergedAt,
 	}
 }
+
+func PullRequestModelsToDomains(prs []models.PullRequest) []domain.PullRequest {
+	res := make([]domain.PullRequest, 0, len(prs))
+	for _, pr := range prs {
+		res = append(res, PullRequestModelToDomain(pr))
+	}
+
+	return res
+}

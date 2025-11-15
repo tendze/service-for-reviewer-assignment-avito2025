@@ -51,6 +51,5 @@ func (s *TeamService) GetTeam(teamName string) ([]domain.User, error) {
 		return []domain.User{}, err
 	}
 
-
 	return teamMembers, err
 }

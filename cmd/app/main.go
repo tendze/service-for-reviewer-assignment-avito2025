@@ -9,7 +9,6 @@ import (
 	"syscall"
 
 	"dang.z.v.task/internal/config"
-	"dang.z.v.task/internal/handlers/prreviewer"
 	"dang.z.v.task/internal/handlers/pullrequest"
 	"dang.z.v.task/internal/handlers/team"
 	"dang.z.v.task/internal/handlers/user"
@@ -48,7 +47,6 @@ func main() {
 	router.Mount("/users", user.NewHandler(userService))
 	router.Mount("/team", team.NewHandler(teamService))
 	router.Mount("/pullRequest", pullrequest.NewHandler(prService))
-	router.Mount("/prReviewer", prreviewer.NewHandler())
 
 	server := &http.Server{
 		Addr:         cfg.HTTPServer.ServerAddr(),
