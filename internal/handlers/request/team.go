@@ -17,7 +17,7 @@ type AddTeamRequest struct {
 type TeamMember struct {
 	UserID   uint   `json:"user_id"`
 	Username string `json:"username"`
-	IsActive bool   `json:"is_active"`
+	IsActive *bool  `json:"is_active"`
 }
 
 func (req *AddTeamRequest) Bind(r *http.Request) error {
@@ -35,6 +35,12 @@ func (req *AddTeamRequest) validate() error {
 
 	if req.Members == nil {
 		return fmt.Errorf("members is required field")
+	}
+
+	for _, member := range *req.Members {
+		if member.IsActive == nil {
+			return fmt.Errorf("is_active is required field for every member")
+		}
 	}
 
 	return nil
@@ -67,7 +73,7 @@ func (req *AddTeamRequest) TeamMembersToUsersDomain() []domain.User {
 			domain.User{
 				ID:        member.UserID,
 				Name:      member.Username,
-				IsActive:  member.IsActive,
+				IsActive:  *member.IsActive,
 				TeamID:    0,
 				CreatedAt: time.Time{},
 			},

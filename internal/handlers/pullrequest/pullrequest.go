@@ -10,7 +10,7 @@ import (
 )
 
 type PRService interface {
-	CreatePullRequest(domain.PullRequest) (*[]domain.User, error)
+	CreatePullRequest(domain.PullRequest) (uint, *[]domain.User, error)
 	MergePullRequest(uint) (domain.PullRequest, *[]domain.User, error)
 	ReassignReviewer(uint, uint) (domain.PullRequest, *[]domain.User, uint, error)
 }
@@ -43,7 +43,7 @@ func (h *PRHandler) createPullRequest(w http.ResponseWriter, r *http.Request) {
 
 	prDomain := req.Domain()
 
-	assignedUsers, err := h.prService.CreatePullRequest(prDomain)
+	prID, assignedUsers, err := h.prService.CreatePullRequest(prDomain)
 	if err != nil {
 		response.JSONError(
 			w,
@@ -54,6 +54,8 @@ func (h *PRHandler) createPullRequest(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	prDomain.ID = prID
 
 	response.JSONSuccess(
 		w,

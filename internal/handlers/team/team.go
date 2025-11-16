@@ -1,6 +1,7 @@
 package team
 
 import (
+	"fmt"
 	"net/http"
 
 	"dang.z.v.task/internal/domain"
@@ -52,6 +53,8 @@ func (h *TeamHandler) saveTeam(w http.ResponseWriter, r *http.Request) {
 
 		return
 	}
+
+	fmt.Println(teamMembers)
 
 	response.JSONSuccess(
 		w,
