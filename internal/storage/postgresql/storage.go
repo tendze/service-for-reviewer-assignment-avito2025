@@ -34,6 +34,33 @@ func New(dsn string) (*Storage, error) {
 	return storage, nil
 }
 
+func (s *Storage) GetPRsByStatus(userID uint, status string) (*[]domain.PullRequest, error) {
+	const op = "postgres.GetPRsByStatus"
+
+	var user models.User
+
+	if err := s.db.First(&user, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, storage.ErrNotFound
+		}
+
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
+	}
+
+	var prs []models.PullRequest
+
+	err := s.db.
+		Where("author_id = ? AND status = ?", userID, status).
+		Find(&prs).Error
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", op, err)
+	}
+
+	res := mapper.PullRequestModelsToDomains(prs)
+
+	return &res, nil
+}
+
 func (s *Storage) AddTeamWithUsersAtomic(team domain.Team, users []domain.User) ([]domain.User, error) {
 	const op = "postgres.SaveTeamWithUsersAtomic"
 

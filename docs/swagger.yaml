@@ -27,8 +27,15 @@ components:
       in: query
       required: true
       schema:
-        type: string
+        type: integer
       description: Идентификатор пользователя
+    StatusQuery:
+      name: status
+      in: query
+      required: true
+      schema:
+        type: string
+      description: Статус пул реквеста
   schemas:
     ErrorResponse:
       type: object
@@ -124,6 +131,28 @@ components:
         status:
           type: string
           enum: [OPEN, MERGED]
+    PullRequestInfo:
+      type: object
+      required: [ pull_requiest_id, pull_request_name, author_id, status, created_at, merged_at ]
+      properties:
+        pull_request_id:
+          type: integer
+        pull_request_name:
+          type: string
+        author_id:
+          type: integer
+        status:
+          type: string
+          enum: [OPEN, MERGED]
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+        mergedAt:
+          type: string
+          format: date-time
+          nullable: true
+          
 
 paths:
   /team/add:
@@ -417,9 +446,61 @@ paths:
                     items:
                       $ref: '#/components/schemas/PullRequestShort'
               example:
-                user_id: 2
+                user_id: "2"
                 pull_requests:
-                  - pull_request_id: pr-1001
-                    pull_request_name: Add search
-                    author_id: u1
-                    status: OPEN
+                  - pull_request_id: "1001"
+                    pull_request_name: "Add search"
+                    author_id: "1"
+                    status: "OPEN"
+
+  /users/getPR:
+    get:
+      tags: [Users]
+      summary: Получить PR'ы по UserID и Статусу (Доп задание)
+      parameters:
+        - $ref: "#/components/parameters/UserIdQuery"
+        - $ref: '#/components/parameters/StatusQuery'
+      responses:
+        '200':
+          description: Список PR'ов пользователя с конкретным статусом
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [pull_requests]
+                properties:
+                  pull_requests:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, title, author_id, status, created_at]
+                      properties:
+                        id:
+                          type: integer
+                        title:
+                          type: string
+                        author_id:
+                          type: integer
+                        status:
+                          type: string
+                          enum: [OPEN, MERGED]
+                        created_at:
+                          type: string
+                          format: date-time
+              example:
+                pull_requests:
+                  - id: 1
+                    title: "Add search"
+                    author_id: 1
+                    status: "OPEN"
+                    created_at: "2025-11-16T15:56:51.834897Z"
+        '404':
+          description: PR или пользователь не найден
+          content:
+            application/json:
+              schema: 
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                error:
+                  code: NOT_FOUND
+                  message: user not found

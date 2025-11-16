@@ -9,9 +9,10 @@ import (
 )
 
 type UserRepository interface {
-	UpdateUserActiveStatus(uint, bool) (*domain.User, error)
+	UpdateUserActiveStatus(userID uint, isActive bool) (*domain.User, error)
 	GetUserTeamName(userID uint) (string, error)
 	GetPRsByReviewer(userID uint) (*[]domain.PullRequest, error)
+	GetPRsByStatus(userID uint, status string) (*[]domain.PullRequest, error)
 }
 
 type UserService struct {
@@ -27,6 +28,20 @@ func NewUserService(
 		userRepo: usrRepository,
 		log:      log,
 	}
+}
+
+func (s *UserService) GetPRsByStatus(userID uint, status string) (*[]domain.PullRequest, error) {
+	const op = "userservice.user.GetPRsByStatus"
+	log := s.log.With(slog.String("op", op))
+
+	usr, err := s.userRepo.GetPRsByStatus(userID, status)
+	if err != nil {
+		log.Error("failed to get pr's by status", slog.Any("err", err))
+
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapStorageError(err))
+	}
+
+	return usr, nil
 }
 
 // / Returns User, User's team name and error

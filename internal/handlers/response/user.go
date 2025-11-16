@@ -1,8 +1,48 @@
 package response
 
 import (
+	"time"
+
 	"dang.z.v.task/internal/domain"
 )
+
+type GetPRsByStatusResponse struct {
+	ID        uint       `json:"id"`
+	Title     string     `json:"title"`
+	AuthorID  uint       `json:"author_id"`
+	Status    string     `json:"status"`
+	CreatedAt time.Time  `json:"created_at"`
+	MergedAt  *time.Time `json:"merged_at,omitempty"`
+}
+
+func NewGetPRsByStatusResponse(prs *[]domain.PullRequest) map[string]interface{} {
+	res := map[string]interface{}{
+		"pull_requests": []interface{}{},
+	}
+
+	if prs == nil {
+		return res
+	}
+
+	resp := make([]GetPRsByStatusResponse, 0, len(*prs))
+	for _, pr := range *prs {
+		resp = append(
+			resp,
+			GetPRsByStatusResponse{
+				ID:        pr.ID,
+				Title:     pr.Title,
+				AuthorID:  pr.AuthorID,
+				Status:    pr.Status,
+				CreatedAt: pr.CreatedAt,
+				MergedAt:  pr.MergedAt,
+			},
+		)
+	}
+
+	res["pull_requests"] = resp
+
+	return res
+}
 
 type SetIsActiveResponse struct {
 	UserID   uint   `json:"user_id"`

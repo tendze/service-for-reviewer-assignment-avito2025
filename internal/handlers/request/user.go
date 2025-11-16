@@ -4,8 +4,50 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"slices"
 	"strconv"
 )
+
+type GetPRsByStatusRequest struct {
+	UserID uint
+	Status string
+}
+
+func (req *GetPRsByStatusRequest) Bind(r *http.Request) error {
+	userIDStr := r.URL.Query().Get("user_id")
+	if userIDStr == "" {
+		return fmt.Errorf("user_id is required query parameter")
+	}
+
+	userID, err := strconv.ParseUint(userIDStr, 10, 32)
+	if err != nil {
+		return fmt.Errorf("user_id must be a valid number")
+	}
+
+	req.UserID = uint(userID)
+
+	status := r.URL.Query().Get("status")
+	if status == "" {
+		return fmt.Errorf("status is required query parameter")
+	}
+
+	req.Status = status
+
+	return req.validate()
+}
+
+func (req *GetPRsByStatusRequest) validate() error {
+	if req.UserID <= 0 {
+		return fmt.Errorf("user_id must be greater than 0")
+	}
+
+	statuses := []string{"OPEN", "MERGED"}
+	if !slices.Contains(statuses, req.Status) {
+		return fmt.Errorf("status must be one of: %v", statuses)
+	}
+
+	return nil
+}
 
 type SetIsActiveRequest struct {
 	UserID   uint  `json:"user_id"`
