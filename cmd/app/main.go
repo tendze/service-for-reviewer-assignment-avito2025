@@ -17,6 +17,7 @@ import (
 	userservice "dang.z.v.task/internal/service/user"
 	"dang.z.v.task/internal/storage/postgresql"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 )
 
 const (
@@ -39,6 +40,17 @@ func main() {
 	}
 
 	router := chi.NewRouter()
+
+	// for swagger to work properly
+	router.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"*"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		AllowCredentials: true,
+	}))
+
+	// swagger
+	router.Handle("/swagger/*", http.StripPrefix("/swagger/", http.FileServer(http.Dir("./docs"))))
 
 	userService := userservice.NewUserService(storage, log)
 	teamService := teamservice.NewTeamService(storage, log)
