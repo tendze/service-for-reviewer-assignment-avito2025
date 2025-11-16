@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:15
+    container_name: pr_service_db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+      POSTGRES_DB: avito_db
+    ports:
+      - "5436:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  migrator:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+    environment:
+      CONFIG_PATH: /app/config/docker.yaml
+      DB_USERNAME: postgres
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: avito_db
+    command: [ "./migrator", "-config", "/app/config/docker.yaml", "-dir", "/app/migrations", "-direction", "up" ]
+    volumes:
+      - ./config:/app/config
+      - ./migrations:/app/migrations
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    depends_on:
+      - db
+      - migrator
+    environment:
+      CONFIG_PATH: /app/config/docker.yaml
+      DB_USERNAME: postgres
+      DB_PASSWORD: "${DB_PASSWORD}"
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: avito_db
+    command: [ "./server", "--config_path", "/app/config/docker.yaml" ]
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./config:/app/config
+
+volumes:
+  db_data:

@@ -1,0 +1,12 @@
+env: "local"
+http_server:
+  host: "app"
+  port: "8080"
+  timeout: 4s
+  idle_timeout: 60s
+db:
+  username: "postgres"
+  host: "db"
+  port: "5432"
+  dbname: "avito_db"
+  sslmode: "disable"

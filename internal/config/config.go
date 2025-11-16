@@ -40,21 +40,26 @@ func MustLoad() *Config {
 	}
 
 	if _, err = os.Stat(configPath); os.IsNotExist(err) {
-		panic("config file does not exists")
+		panic("config file does not exist: " + configPath)
 	}
 
 	var cfg Config
 	if err = cleanenv.ReadConfig(configPath, &cfg); err != nil {
 		panic("cannot read config: " + err.Error())
 	}
-	err = godotenv.Load()
-	if err != nil {
-		panic("could not read env files: " + err.Error())
+
+	if _, err := os.Stat(".env"); err == nil {
+		_ = godotenv.Load() // игнорируем ошибку
 	}
+
 	cfg.DB.DBPassword = os.Getenv("DB_PASSWORD")
+	if cfg.DB.DBPassword == "" {
+		panic("DB_PASSWORD is not set in environment")
+	}
 
 	return &cfg
 }
+
 
 func fetchConfigPath() (string, error) {
 	var configPath string

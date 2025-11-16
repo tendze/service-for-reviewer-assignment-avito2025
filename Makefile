@@ -28,3 +28,12 @@ lint:
 
 test:
 	go test ./...
+
+run-local:
+	go run ./cmd/app/main.go --config_path=./config/local.yaml
+
+run-docker-build:
+	docker-compose up --build
+
+run-docker:
+	docker-compose up
