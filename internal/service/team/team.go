@@ -1,9 +1,11 @@
 package teamservice
 
 import (
+	"fmt"
 	"log/slog"
 
 	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/service/mapper"
 )
 
 type TeamRepository interface {
@@ -34,7 +36,7 @@ func (s *TeamService) AddTeam(teamName string, users []domain.User) ([]domain.Us
 	if err != nil {
 		log.Error("failed to add team", slog.Any("err", err))
 
-		return []domain.User{}, err
+		return []domain.User{}, fmt.Errorf("%s: %w", op, mapper.MapStorageError(err))
 	}
 
 	return savedUsers, nil
@@ -46,10 +48,10 @@ func (s *TeamService) GetTeam(teamName string) ([]domain.User, error) {
 
 	teamMembers, err := s.teamRepo.GetTeamMembers(teamName)
 	if err != nil {
-		log.Error("failed to add team", slog.Any("err", err))
+		log.Error("failed get team", slog.Any("err", err))
 
-		return []domain.User{}, err
+		return []domain.User{}, fmt.Errorf("%s: %w", op, mapper.MapStorageError(err))
 	}
 
-	return teamMembers, err
+	return teamMembers, nil
 }

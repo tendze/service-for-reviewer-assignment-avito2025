@@ -2,22 +2,25 @@ package storage
 
 import "errors"
 
-// Common errors
 var (
-	ErrNotFound         = errors.New("not found")
-	ErrAlreadyExists    = errors.New("already exists")
-	ErrInvalidInput     = errors.New("invalid input")
-	ErrPermissionDenied = errors.New("permission denied")
-	ErrUnauthorized     = errors.New("unauthorized")
-	ErrInternalServer   = errors.New("internal server error")
-	ErrConflict         = errors.New("conflict")
+	ErrNotFound       = errors.New("record not found")
+	ErrAlreadyExists  = errors.New("already exists")
+	ErrInternalServer = errors.New("internal server error")
 )
 
-// Database constraint errors
 var (
 	ErrDuplicateKey        = errors.New("duplicate key violation")
 	ErrForeignKeyViolation = errors.New("foreign key violation")
 	ErrCheckConstraint     = errors.New("check constraint violation")
 	ErrNotNullConstraint   = errors.New("not null constraint violation")
 	ErrUniqueConstraint    = errors.New("unique constraint violation")
+)
+
+var (
+	ErrPullRequestMerged    = errors.New("pull request is already merged")
+	ErrTeamExists           = errors.New("team already exists")
+	ErrNoReviewersAvailable = errors.New("no reviewers available for reassignment")
+	ErrReviewerNotAssigned  = errors.New("reviewer is not assigned to this PR")
+	ErrPRNotFound           = errors.New("pull request not found")
+	ErrAuthorNotFound       = errors.New("author not found")
 )

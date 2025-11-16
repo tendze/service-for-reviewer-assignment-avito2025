@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/handlers/mapper"
 	"dang.z.v.task/internal/handlers/request"
 	"dang.z.v.task/internal/handlers/response"
 	"github.com/go-chi/chi/v5"
@@ -45,11 +46,17 @@ func (h *PRHandler) createPullRequest(w http.ResponseWriter, r *http.Request) {
 
 	prID, assignedUsers, err := h.prService.CreatePullRequest(prDomain)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return
@@ -78,11 +85,17 @@ func (h *PRHandler) mergePullRequest(w http.ResponseWriter, r *http.Request) {
 
 	pr, assignedUsers, err := h.prService.MergePullRequest(req.PullRequestID)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return
@@ -104,8 +117,8 @@ func (h *PRHandler) reassingPullRequest(w http.ResponseWriter, r *http.Request) 
 	if err := req.Bind(r); err != nil {
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
+			http.StatusBadRequest,
+			response.BAD_REQUEST,
 			err.Error(),
 		)
 
@@ -114,11 +127,17 @@ func (h *PRHandler) reassingPullRequest(w http.ResponseWriter, r *http.Request) 
 
 	pr, assignedUsers, replacedByID, err := h.prService.ReassignReviewer(req.PullRequestID, req.OldReviewerID)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return

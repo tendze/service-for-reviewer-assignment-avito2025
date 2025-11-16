@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/handlers/mapper"
 	"dang.z.v.task/internal/handlers/request"
 	"dang.z.v.task/internal/handlers/response"
 	"github.com/go-chi/chi/v5"
@@ -41,11 +42,17 @@ func (h *UserHandler) setIsActive(w http.ResponseWriter, r *http.Request) {
 
 	user, teamName, err := h.userService.SetIsActive(req.UserID, *req.IsActive)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return
@@ -64,11 +71,17 @@ func (h *UserHandler) getReview(w http.ResponseWriter, r *http.Request) {
 
 	prs, err := h.userService.GetReview(req.UserID)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return

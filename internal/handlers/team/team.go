@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/handlers/mapper"
 	"dang.z.v.task/internal/handlers/request"
 	"dang.z.v.task/internal/handlers/response"
 	"github.com/go-chi/chi/v5"
@@ -44,11 +45,17 @@ func (h *TeamHandler) saveTeam(w http.ResponseWriter, r *http.Request) {
 
 	teamMembers, err := h.teamService.AddTeam(req.TeamName, domainUsers)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return
@@ -73,11 +80,17 @@ func (h *TeamHandler) getTeam(w http.ResponseWriter, r *http.Request) {
 
 	teamMembers, err := h.teamService.GetTeam(req.TeamName)
 	if err != nil {
+		var (
+			code         = mapper.HTTPStatusFromError(err)
+			errorMsg     = mapper.ErrorMessageFromError(err)
+			errorCodeMsg = mapper.ErrorCodeMessageFromError(err)
+		)
+
 		response.JSONError(
 			w,
-			http.StatusInternalServerError,
-			response.INTERNAL_SERVER_ERRROR,
-			err.Error(),
+			code,
+			errorCodeMsg,
+			errorMsg,
 		)
 
 		return

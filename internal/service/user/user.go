@@ -1,9 +1,11 @@
 package userservice
 
 import (
+	"fmt"
 	"log/slog"
 
 	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/service/mapper"
 )
 
 type UserRepository interface {
@@ -36,14 +38,14 @@ func (s *UserService) SetIsActive(userID uint, isActive bool) (*domain.User, str
 	if err != nil {
 		log.Error("failed to update user's active status", slog.Any("err", err))
 
-		return nil, "", err
+		return nil, "", fmt.Errorf("%s: %w", op, mapper.MapStorageError(err))
 	}
 
 	teamName, err := s.userRepo.GetUserTeamName(userID)
 	if err != nil {
 		log.Error("failed to get user's team name", slog.Any("err", err))
 
-		return nil, "", err
+		return nil, "", fmt.Errorf("%s: %w", op, mapper.MapStorageError(err))
 	}
 
 	return usr, teamName, nil
@@ -57,7 +59,7 @@ func (s *UserService) GetReview(userID uint) (*[]domain.PullRequest, error) {
 	if err != nil {
 		log.Error("failed to update user's active status", slog.Any("err", err))
 
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapStorageError(err))
 	}
 
 	return prs, nil

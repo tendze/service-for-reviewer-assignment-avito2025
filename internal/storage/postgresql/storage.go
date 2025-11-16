@@ -1,11 +1,13 @@
 package postgresql
 
 import (
+	"errors"
 	"fmt"
 	"math/rand"
 	"time"
 
 	"dang.z.v.task/internal/domain"
+	"dang.z.v.task/internal/storage"
 	"dang.z.v.task/internal/storage/postgresql/mapper"
 	"dang.z.v.task/internal/storage/postgresql/models"
 	"gorm.io/driver/postgres"
@@ -20,9 +22,8 @@ type Storage struct {
 func New(dsn string) (*Storage, error) {
 	const op = "postgres.New"
 
-	// TODO: turn on silent mode
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("%s: %w", op, err)
@@ -38,27 +39,40 @@ func (s *Storage) AddTeamWithUsersAtomic(team domain.Team, users []domain.User) 
 
 	var savedUsers []domain.User
 
-	return savedUsers,
-		s.db.Transaction(func(tx *gorm.DB) error {
-			teamModel := mapper.TeamDomainToModel(team)
-			if err := tx.Create(&teamModel).Error; err != nil {
-				return fmt.Errorf("%s: save team: %w", op, err)
-			}
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		var tempTeam models.Team
+		if err := tx.Where("name = ?", team.Name).First(&tempTeam).Error; err == nil {
+			return fmt.Errorf("%s: %w", op, storage.ErrTeamExists)
+		}
 
-			userModels := make([]models.User, 0, len(users))
-			for _, user := range users {
-				user.TeamID = teamModel.ID
-				userModels = append(userModels, mapper.UserDomainToModel(user))
-			}
+		teamModel := mapper.TeamDomainToModel(team)
+		if err := tx.Create(&teamModel).Error; err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
 
-			if err := tx.Create(&userModels).Error; err != nil {
-				return fmt.Errorf("%s: save users: %w", op, err)
-			}
+		userModels := make([]models.User, 0, len(users))
+		for _, user := range users {
+			user.TeamID = teamModel.ID
+			userModels = append(userModels, mapper.UserDomainToModel(user))
+		}
 
-			savedUsers = mapper.UserModelsToDomains(userModels)
+		if err := tx.Create(&userModels).Error; err != nil {
+			return fmt.Errorf("%s: %w", op, err)
+		}
 
-			return nil
-		})
+		savedUsers = mapper.UserModelsToDomains(userModels)
+
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, storage.ErrTeamExists) {
+			return nil, err
+		}
+
+		return nil, mapper.MapPostgresError(err)
+	}
+
+	return savedUsers, nil
 }
 
 func (s *Storage) GetTeamMembers(teamName string) ([]domain.User, error) {
@@ -66,22 +80,25 @@ func (s *Storage) GetTeamMembers(teamName string) ([]domain.User, error) {
 
 	var team models.Team
 	if err := s.db.Where("name = ?", teamName).First(&team).Error; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	var users []models.User
 	if err := s.db.Where("team_id = ?", team.ID).Find(&users).Error; err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	return mapper.UserModelsToDomains(users), nil
 }
 
 func (s *Storage) GetUserTeamName(userID uint) (string, error) {
+	const op = "postgres.GetUsersTeamName"
+
 	var user models.User
 	if err := s.db.Preload("Team").First(&user, userID).Error; err != nil {
-		return "", err
+		return "", fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
+
 	return user.Team.Name, nil
 }
 
@@ -91,11 +108,11 @@ func (s *Storage) UpdateUserActiveStatus(userID uint, isActive bool) (*domain.Us
 	var user models.User
 
 	if err := s.db.First(&user, userID).Error; err != nil {
-		return nil, fmt.Errorf("%s: user not found: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	if err := s.db.Model(&user).Update("is_active", isActive).Error; err != nil {
-		return nil, fmt.Errorf("%s: update failed: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	domainUser := mapper.UserModelToDomain(user)
@@ -107,6 +124,11 @@ func (s *Storage) UpdateUserActiveStatus(userID uint, isActive bool) (*domain.Us
 func (s *Storage) GetPRsByReviewer(userID uint) (*[]domain.PullRequest, error) {
 	const op = "postgres.GetPRsByReviewer"
 
+	var user models.User
+	if err := s.db.First(&user, userID).Error; err != nil {
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
+	}
+
 	var prs []models.PullRequest
 
 	err := s.db.
@@ -115,7 +137,7 @@ func (s *Storage) GetPRsByReviewer(userID uint) (*[]domain.PullRequest, error) {
 		Preload("Author").
 		Find(&prs).Error
 	if err != nil {
-		return nil, fmt.Errorf("%s: failed to get pr's %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	domainPRs := mapper.PullRequestModelsToDomains(prs)
@@ -129,15 +151,19 @@ func (s *Storage) SetMergedAt(prID uint, time time.Time) (domain.PullRequest, er
 	var pr models.PullRequest
 
 	if err := s.db.First(&pr, prID).Error; err != nil {
-		return domain.PullRequest{}, fmt.Errorf("%s: pull request not found: %w", op, err)
+		return domain.PullRequest{}, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	if pr.MergedAt != nil {
-		return domain.PullRequest{}, fmt.Errorf("%s: PR is already merged", op)
+		return domain.PullRequest{}, fmt.Errorf("%s: %w", op, storage.ErrPullRequestMerged)
 	}
 
 	if err := s.db.Model(&pr).Update("merged_at", time).Error; err != nil {
-		return domain.PullRequest{}, fmt.Errorf("%s: failed to update merged at: %w", op, err)
+		return domain.PullRequest{}, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
+	}
+
+	if err := s.db.Model(&pr).Update("status", "MERGED").Error; err != nil {
+		return domain.PullRequest{}, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	domainPR := mapper.PullRequestModelToDomain(pr)
@@ -156,7 +182,7 @@ func (s *Storage) GetUserReviewersByPRID(prID uint) (*[]domain.User, error) {
 		Where("r.pr_id = ?", prID).
 		Find(&users).Error
 	if err != nil {
-		return nil, fmt.Errorf("%s: %w", op, err)
+		return nil, fmt.Errorf("%s: %w", op, mapper.MapPostgresError(err))
 	}
 
 	domainUsers := mapper.UserModelsToDomains(users)
@@ -171,14 +197,18 @@ func (s *Storage) CreatePullRequest(pr domain.PullRequest) (uint, *[]domain.User
 	var createdPRID uint
 
 	err := s.db.Transaction(func(tx *gorm.DB) error {
+		var author models.User
+		if err := tx.First(&author, pr.AuthorID).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("%s: %w", op, storage.ErrAuthorNotFound)
+			}
+
+			return fmt.Errorf("%s: get author: %w", op, err)
+		}
+
 		prModel := mapper.PullRequestDomainToModel(pr)
 		if err := tx.Create(&prModel).Error; err != nil {
 			return fmt.Errorf("%s: create PR: %w", op, err)
-		}
-
-		var author models.User
-		if err := tx.First(&author, pr.AuthorID).Error; err != nil {
-			return fmt.Errorf("%s: get author: %w", op, err)
 		}
 
 		// getting every team member except author
@@ -213,10 +243,29 @@ func (s *Storage) CreatePullRequest(pr domain.PullRequest) (uint, *[]domain.User
 		return nil
 	})
 	if err != nil {
-		return 0, nil, err
+		if errors.Is(err, storage.ErrAuthorNotFound) {
+			return 0, nil, err
+		}
+
+		return 0, nil, mapper.MapPostgresError(err)
 	}
 
 	return createdPRID, &assignedUsers, nil
+}
+
+func (s *Storage) GetPRStatus(prID uint) (string, error) {
+	const op = "postgres.GetPRStatus"
+
+	var pr models.PullRequest
+	if err := s.db.First(&pr, prID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return "", fmt.Errorf("%s: %w", op, storage.ErrPRNotFound)
+		}
+
+		return "", fmt.Errorf("%s: %w", op, err)
+	}
+
+	return pr.Status, nil
 }
 
 func (s *Storage) ReassignReviewer(prID uint, oldReviewerID uint) (domain.PullRequest, *[]domain.User, uint, error) {
@@ -228,13 +277,21 @@ func (s *Storage) ReassignReviewer(prID uint, oldReviewerID uint) (domain.PullRe
 	err := s.db.Transaction(func(tx *gorm.DB) error {
 		// check if pr exists
 		if err := tx.First(&pr, prID).Error; err != nil {
-			return fmt.Errorf("%s: PR not found: %w", op, err)
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return fmt.Errorf("%s: %w", op, storage.ErrPRNotFound)
+			}
+
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
 		// check if reviewerID is actually reviewer
 		if err := tx.
 			Where("pr_id = ? AND reviewer_id = ?", prID, oldReviewerID).
 			First(&currentReviewer).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return storage.ErrReviewerNotAssigned
+			}
+
 			return fmt.Errorf("%s: reviewer is not assigned to this PR: %w", op, err)
 		}
 
@@ -252,13 +309,13 @@ func (s *Storage) ReassignReviewer(prID uint, oldReviewerID uint) (domain.PullRe
 				author.TeamID, author.ID,
 			).
 			Find(&teamMembers).Error; err != nil {
-			return fmt.Errorf("%s: failed to get team members: %w", op, err)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
 		// lookup for pr's reviewers
 		var currentReviewers []models.PRReviewer
 		if err := tx.Where("pr_id = ?", prID).Find(&currentReviewers).Error; err != nil {
-			return fmt.Errorf("%s: failed to get reviewers: %w", op, err)
+			return fmt.Errorf("%s: %w", op, err)
 		}
 
 		// set of current reviewers id's
@@ -276,7 +333,7 @@ func (s *Storage) ReassignReviewer(prID uint, oldReviewerID uint) (domain.PullRe
 		}
 
 		if len(candidates) == 0 {
-			return fmt.Errorf("%s: no available reviewers for reassignment", op)
+			return storage.ErrNoReviewersAvailable
 		}
 
 		// new random reviewer
@@ -290,7 +347,15 @@ func (s *Storage) ReassignReviewer(prID uint, oldReviewerID uint) (domain.PullRe
 		return nil
 	})
 	if err != nil {
-		return domain.PullRequest{}, nil, 0, err
+		if errors.Is(err, storage.ErrPRNotFound) ||
+			errors.Is(err, storage.ErrReviewerNotAssigned) ||
+			errors.Is(err, storage.ErrNoReviewersAvailable) ||
+			errors.Is(err, storage.ErrAuthorNotFound) {
+
+			return domain.PullRequest{}, nil, 0, err
+		}
+
+		return domain.PullRequest{}, nil, 0, mapper.MapPostgresError(err)
 	}
 
 	domainPR := mapper.PullRequestModelToDomain(pr)
