@@ -21,9 +21,10 @@ import (
 )
 
 const (
-	envLocal = "local"
-	envDev   = "dev"
-	envProd  = "prod"
+	envLocal  = "local"
+	envDev    = "dev"
+	envProd   = "prod"
+	envDocker = "docker"
 )
 
 func main() {
@@ -108,6 +109,10 @@ func setupLogger(env string) *slog.Logger {
 	case envProd:
 		log = slog.New(
 			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo}),
+		)
+	case envDocker:
+		log = slog.New(
+			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
 		)
 	}
 

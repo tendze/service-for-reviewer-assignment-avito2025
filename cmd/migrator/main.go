@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"dang.z.v.task/internal/config"
 	"github.com/golang-migrate/migrate/v4"
@@ -15,6 +16,7 @@ import (
 	_ "github.com/lib/pq"
 )
 
+// Migrator for postgresql
 func main() {
 	configPath := flag.String("config", "", "Path to config file")
 	migrationsDir := flag.String("dir", "./migrations", "Migrations directory")
@@ -28,7 +30,7 @@ func main() {
 	cfg := config.MustLoad()
 
 	dsn := cfg.DB.DSN()
-	db, err := sql.Open("postgres", dsn)
+	db, err := retryConnection(dsn)
 	if err != nil {
 		log.Fatalf("failed to open DB: %v", err)
 	}
@@ -63,4 +65,27 @@ func main() {
 		fmt.Println("unknown direction, use -dir=up or -dir=down")
 		os.Exit(1)
 	}
+}
+
+func retryConnection(dsn string) (*sql.DB, error) {
+	const op = "migrator.main.retryConnection"
+
+	var db *sql.DB
+	var err error
+	for i := 0; i < 5; i++ {
+		db, err = sql.Open("postgres", dsn)
+		if err == nil {
+			break
+		}
+
+		if i < 4 {
+			time.Sleep(500 * time.Millisecond)
+		}
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("%s: failed to connect after retries: %w", op, err)
+	}
+
+	return db, err
 }

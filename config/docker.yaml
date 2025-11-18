@@ -1,4 +1,4 @@
-env: "local"
+env: "docker"
 http_server:
   host: "app"
   port: "8080"
@@ -8,5 +8,6 @@ db:
   username: "postgres"
   host: "db"
   port: "5432"
+  password: "parol123"
   dbname: "avito_db"
   sslmode: "disable"

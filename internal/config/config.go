@@ -17,10 +17,10 @@ type Config struct {
 }
 
 type HTTPServer struct {
-	Host        string        `yaml:"host" env-default:"localhost"`
-	Port        string        `yaml:"port" env-default:"8080"`
-	Timeout     time.Duration `yaml:"timeout" env-default:"4s"`
-	IdleTimeout time.Duration `yaml:"idle_timeout" env-default:"60s"`
+	Host                string        `yaml:"host" env-default:"localhost"`
+	Port                string        `yaml:"port" env-default:"8080"`
+	Timeout             time.Duration `yaml:"timeout" env-default:"4s"`
+	IdleTimeout         time.Duration `yaml:"idle_timeout" env-default:"60s"`
 	ShuttingDownTimeout time.Duration `yaml:"shutting_down_timeout" env-default:"5s"`
 }
 
@@ -59,7 +59,6 @@ func MustLoad() *Config {
 
 	return &cfg
 }
-
 
 func fetchConfigPath() (string, error) {
 	var configPath string
