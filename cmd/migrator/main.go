@@ -72,20 +72,27 @@ func retryConnection(dsn string) (*sql.DB, error) {
 
 	var db *sql.DB
 	var err error
-	for i := 0; i < 5; i++ {
+
+	for i := 0; i < 10; i++ {
 		db, err = sql.Open("postgres", dsn)
+		if err != nil {
+			if i < 9 {
+				time.Sleep(time.Second)
+				continue
+			} else {
+				return nil, fmt.Errorf("%s: failed to open DB: %w", op, err)
+			}
+		}
+
+		err = db.Ping()
 		if err == nil {
-			break
+			return db, nil 
 		}
 
-		if i < 4 {
-			time.Sleep(500 * time.Millisecond)
+		if i < 9 {
+			time.Sleep(time.Second)
 		}
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("%s: failed to connect after retries: %w", op, err)
-	}
-
-	return db, err
+	return nil, fmt.Errorf("%s: failed to connect after retries: %w", op, err)
 }

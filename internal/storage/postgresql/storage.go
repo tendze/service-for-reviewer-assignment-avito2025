@@ -22,22 +22,7 @@ type Storage struct {
 func New(dsn string) (*Storage, error) {
 	const op = "postgres.New"
 
-	var db *gorm.DB
-	var err error
-
-	for i := 0; i < 5; i++ {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent),
-		})
-		if err == nil {
-			break
-		}
-
-		if i < 4 {
-			time.Sleep(500 * time.Millisecond)
-		}
-	}
-
+	db, err := retryConnection(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("%s: failed to connect after retries: %w", op, err)
 	}
@@ -45,6 +30,26 @@ func New(dsn string) (*Storage, error) {
 	storage := &Storage{db: db}
 
 	return storage, nil
+}
+
+func retryConnection(dsn string) (*gorm.DB, error) {
+	var db *gorm.DB
+	var err error
+
+	for i := 0; i < 10; i++ {
+		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logger.Silent),
+		})
+		if err == nil {
+			break
+		}
+
+		if i < 9 {
+			time.Sleep(time.Second)
+		}
+	}
+
+	return db, err
 }
 
 func (s *Storage) GetPRsByStatus(userID uint, status string) (*[]domain.PullRequest, error) {
